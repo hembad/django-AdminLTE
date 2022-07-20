@@ -127,18 +127,16 @@ def get_jazzmin_settings(request: WSGIRequest) -> Dict:
     Get Jazzmin settings, update any defaults from the request, and return
     """
     settings = get_settings()
+    admin_site = {x.name: x for x in all_sites}.get("admin", {})
+    
+    if not settings["site_title"]:
+        settings["site_title"] = getattr(admin_site, "site_title", None)
 
-    if hasattr(request, "current_app"):
-        admin_site = {x.name: x for x in all_sites}.get(request.current_app, "admin")
-        if not settings["site_title"]:
-            settings["site_title"] = admin_site.site_title
+    if not settings["site_header"]:
+        settings["site_header"] = getattr(admin_site, "site_header", None)
 
-        if not settings["site_header"]:
-            settings["site_header"] = admin_site.site_header
-
-        if not settings["site_brand"]:
-            settings["site_brand"] = admin_site.site_header
-
+    if not settings["site_brand"]:
+        settings["site_brand"] = getattr(admin_site, "site_header", None)
     return settings
 
 
@@ -429,7 +427,11 @@ def header_class(header: Dict, forloop: Dict) -> str:
         header.get("descending"),
     )
 
-    if forloop["counter0"] == 0:
+    is_checkbox_column_conditions = (
+        forloop["counter0"] == 0,
+        header.get("class_attrib") == ' class="action-checkbox-column"',
+    )
+    if all(is_checkbox_column_conditions):
         classes.append("djn-checkbox-select-all")
 
     if not header["sortable"]:
